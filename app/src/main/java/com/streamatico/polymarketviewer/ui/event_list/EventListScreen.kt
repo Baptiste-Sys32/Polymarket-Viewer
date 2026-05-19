@@ -1,6 +1,8 @@
 package com.streamatico.polymarketviewer.ui.event_list
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,15 +23,16 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.LocalFireDepartment
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.StarOutline
@@ -37,8 +41,6 @@ import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -47,11 +49,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,7 +74,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -144,6 +158,7 @@ private fun InternalEventListScreen(
     val selectedSortOrder by viewModel.selectedSortOrder.collectAsState()
     val areTagsLoading by viewModel.areTagsLoading.collectAsState()
     val watchlistIds by viewModel.watchlistIds.collectAsState()
+    val hiddenFilterSlugs by viewModel.hiddenFilterSlugs.collectAsState()
 
     var showBottomSheet by remember { mutableStateOf(false) }
 
@@ -156,11 +171,15 @@ private fun InternalEventListScreen(
         canLoadMore = canLoadMore,
         selectedTagSlug = selectedTagSlug,
         selectedSortOrder = selectedSortOrder,
+        hiddenFilterSlugs = hiddenFilterSlugs,
         watchlistIds = watchlistIds,
         onRefresh = viewModel::refreshEvents,
         onLoadMore = viewModel::loadMoreEvents,
         onTagSelected = viewModel::selectTag,
+        onBrowseFilterSelected = viewModel::selectBrowseFilter,
         onSortOrderSelected = viewModel::selectSortOrder,
+        onToggleHiddenFilter = viewModel::toggleHiddenFilter,
+        onClearHiddenFilters = viewModel::clearHiddenFilters,
         onRetry = viewModel::retryLoad,
         onToggleWatchlist = viewModel::toggleWatchlist,
         onEventClick = onEventClick,
@@ -185,11 +204,15 @@ private fun EventListScreenContent(
     canLoadMore: Boolean,
     selectedTagSlug: String,
     selectedSortOrder: PolymarketEventsSortOrder,
+    hiddenFilterSlugs: Set<String>,
     watchlistIds: Set<String>,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onTagSelected: (String) -> Unit,
+    onBrowseFilterSelected: (String, PolymarketEventsSortOrder?) -> Unit,
     onSortOrderSelected: (PolymarketEventsSortOrder) -> Unit,
+    onToggleHiddenFilter: (String) -> Unit,
+    onClearHiddenFilters: () -> Unit,
     onRetry: () -> Unit,
     onToggleWatchlist: (String) -> Unit,
     onEventClick: (event: BaseEventDto) -> Unit,
@@ -212,10 +235,12 @@ private fun EventListScreenContent(
         canLoadMore = canLoadMore,
         selectedTagSlug = selectedTagSlug,
         selectedSortOrder = selectedSortOrder,
+        hiddenFilterSlugs = hiddenFilterSlugs,
         watchlistIds = watchlistIds,
         onRefresh = onRefresh,
         onLoadMore = onLoadMore,
         onTagSelected = onTagSelected,
+        onBrowseFilterSelected = onBrowseFilterSelected,
         onRetry = onRetry,
         onToggleWatchlist = onToggleWatchlist,
         onEventClick = onEventClick,
@@ -231,80 +256,24 @@ private fun EventListScreenContent(
 
         ModalBottomSheet(
             onDismissRequest = onDismissRequest,
-            sheetState = sheetState
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.onBackground,
         ) {
-            Column(modifier = Modifier.padding(vertical = 8.dp)) {
-                Text(
-                    stringResource(R.string.sort_by_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 8.dp)
-                )
-
-                val sortOptions = mapOf(
-                    PolymarketEventsSortOrder.VOLUME_24H to stringResource(R.string.sort_option_24h_volume),
-                    PolymarketEventsSortOrder.VOLUME_TOTAL to stringResource(R.string.sort_option_total_volume),
-                    PolymarketEventsSortOrder.LIQUIDITY to stringResource(R.string.sort_option_liquidity),
-                    PolymarketEventsSortOrder.NEWEST to stringResource(R.string.sort_option_newest),
-                    PolymarketEventsSortOrder.ENDING_SOON to stringResource(R.string.sort_option_ending_soon),
-                    PolymarketEventsSortOrder.COMPETITIVE to stringResource(R.string.sort_option_competitive)
-                )
-
-                sortOptions.forEach { (key, label) ->
-                    val isSelected = key == selectedSortOrder
-                    val isDefault = key == PolymarketEventsSortOrder.DEFAULT_SORT_ORDER
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSortOrderSelected(key)
-                                scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                    if (!sheetState.isVisible) {
-                                        onDismissRequest()
-                                    }
-                                }
-                            }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = getIconForSortOrder(key),
-                            contentDescription = null,
-                            tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.bodyLarge,
-                            //modifier = Modifier.weight(1f),
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
-
-                        if(isDefault) {
-                            Spacer(Modifier.size(8.dp))
-                            Text(
-                                text = stringResource(R.string.sort_option_default),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.outline
-                            )
-                        }
-
-                        Spacer(Modifier.weight(1f))
-
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Filled.Check,
-                                contentDescription = stringResource(R.string.cd_selected),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
+            MarketFiltersSheet(
+                selectedTagSlug = selectedTagSlug,
+                selectedSortOrder = selectedSortOrder,
+                hiddenFilterSlugs = hiddenFilterSlugs,
+                onBrowseFilterSelected = { slug, order ->
+                    onBrowseFilterSelected(slug, order)
+                    scope.launch { sheetState.hide() }.invokeOnCompletion {
+                        if (!sheetState.isVisible) onDismissRequest()
                     }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+                },
+                onSortOrderSelected = onSortOrderSelected,
+                onToggleHiddenFilter = onToggleHiddenFilter,
+                onClearHiddenFilters = onClearHiddenFilters,
+            )
         }
     }
 }
@@ -320,10 +289,12 @@ fun EventListContent(
     canLoadMore: Boolean,
     selectedTagSlug: String,
     selectedSortOrder: PolymarketEventsSortOrder,
+    hiddenFilterSlugs: Set<String>,
     watchlistIds: Set<String>,
     onRefresh: () -> Unit,
     onLoadMore: () -> Unit,
     onTagSelected: (String) -> Unit,
+    onBrowseFilterSelected: (String, PolymarketEventsSortOrder?) -> Unit,
     onRetry: () -> Unit,
     onToggleWatchlist: (String) -> Unit,
     onEventClick: (event: BaseEventDto) -> Unit,
@@ -349,10 +320,23 @@ fun EventListContent(
     }
 
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val drawerScope = rememberCoroutineScope()
 
-    MyScaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            AppMenuDrawer(
+                onNavigateToSettings = onNavigateToSettings,
+                onNavigateToAbout = onNavigateToAbout,
+                onDismiss = { drawerScope.launch { drawerState.close() } },
+            )
+        },
+        gesturesEnabled = onNavigateBack == null,
+    ) {
+        MyScaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
             TopAppBar(
                 navigationIcon = {
                     if (onNavigateBack != null) {
@@ -373,48 +357,63 @@ fun EventListContent(
                         stringResource(R.string.app_name)
                     }
 
-                    Text(titleText, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                },
-                actions = {
-                    if (onSearchClick != null) {
-                        IconButton(onClick = onSearchClick) {
-                            Icon(
-                                imageVector = Icons.Filled.Search,
-                                contentDescription = stringResource(id = R.string.search_tooltip)
+                    Column {
+                        Text(
+                            titleText,
+                            style = MaterialTheme.typography.headlineMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (onNavigateBack == null) {
+                            Text(
+                                text = "Live markets",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
                             )
                         }
                     }
-                    IconButton(onClick = onShowSortOptionsClick) {
-                        Icon(
-                            imageVector = Icons.Filled.FilterList,
-                            contentDescription = stringResource(id = R.string.filter_tooltip)
-                        )
-                    }
-
-                    if (onNavigateToSettings != null && onNavigateToAbout != null) {
-                        OverflowMenuAction(
-                            onNavigateToSettings = onNavigateToSettings,
-                            onNavigateToAbout = onNavigateToAbout
-                        )
+                },
+                actions = {
+                    if (onNavigateBack != null) {
+                        IconButton(onClick = onShowSortOptionsClick) {
+                            Icon(
+                                imageVector = SiteFilterIcon,
+                                contentDescription = stringResource(id = R.string.filter_tooltip)
+                            )
+                        }
                     }
                 },
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
-        }
-    ) { paddingValues ->
-        Column(modifier = Modifier.padding(paddingValues)) {
-            TagsRow(
-                tags = tags,
-                areTagsLoading = areTagsLoading,
-                selectedTagSlug = selectedTagSlug,
-                onTagSelected = onTagSelected
-            )
-
+            }
+        ) { paddingValues ->
             Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(MaterialTheme.colorScheme.background)
             ) {
-                when (uiState) {
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    TagsRow(
+                        tags = tags,
+                        areTagsLoading = areTagsLoading,
+                        selectedTagSlug = selectedTagSlug,
+                        onTagSelected = onTagSelected
+                    )
+
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when (uiState) {
                     is EventListUiState.Loading -> {
                         // Always show LoadingBox when uiState is Loading,
                         // regardless of tags loading status.
@@ -469,10 +468,10 @@ fun EventListContent(
                                 LazyVerticalGrid(
                                     columns = gridCells,
                                     state = gridState,
-                                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                                    //contentPadding = PaddingValues(vertical = 8.dp),
-                                    //horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    //verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
                                     items(
                                         items = uiState.events,
@@ -533,6 +532,18 @@ fun EventListContent(
                             secondaryAction = secondaryAction
                         )
                     }
+                    }
+                    }
+                }
+
+                if (onNavigateBack == null) {
+                    PolymarketBottomNavigationBar(
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                        onHomeClick = { onBrowseFilterSelected(POLYMARKET_EVENTS_SLUG_ALL, PolymarketEventsSortOrder.DEFAULT_SORT_ORDER) },
+                        onSearchClick = onSearchClick,
+                        onFiltersClick = onShowSortOptionsClick,
+                        onMenuClick = { drawerScope.launch { drawerState.open() } },
+                    )
                 }
             }
         }
@@ -542,50 +553,152 @@ fun EventListContent(
 private const val LOAD_MORE_THRESHOLD = 5
 
 @Composable
-private fun OverflowMenuAction(
-    onNavigateToSettings: () -> Unit,
-    onNavigateToAbout: () -> Unit
+private fun PolymarketBottomNavigationBar(
+    modifier: Modifier = Modifier,
+    onHomeClick: () -> Unit,
+    onSearchClick: (() -> Unit)?,
+    onFiltersClick: () -> Unit,
+    onMenuClick: () -> Unit,
 ) {
-    var showMenu by remember { mutableStateOf(false) }
-    IconButton(onClick = { showMenu = true }) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(32.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.26f)),
+        tonalElevation = 0.dp,
+        shadowElevation = 10.dp,
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 32.dp, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IslandNavIconButton(
+                onClick = onHomeClick,
+                icon = Icons.Filled.Home,
+                contentDescription = "Home"
+            )
+            IslandNavIconButton(
+                onClick = { onSearchClick?.invoke() },
+                icon = Icons.Filled.Search,
+                contentDescription = stringResource(id = R.string.search_tooltip),
+                enabled = onSearchClick != null,
+            )
+            IslandNavIconButton(
+                onClick = onFiltersClick,
+                icon = SiteFilterIcon,
+                contentDescription = stringResource(id = R.string.filter_tooltip)
+            )
+            IslandNavIconButton(
+                onClick = onMenuClick,
+                icon = Icons.Filled.Menu,
+                contentDescription = stringResource(id = R.string.more_options_tooltip)
+            )
+        }
+    }
+}
+
+@Composable
+private fun IslandNavIconButton(
+    onClick: () -> Unit,
+    icon: ImageVector,
+    contentDescription: String?,
+    enabled: Boolean = true,
+) {
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .clickable(enabled = enabled, onClick = onClick)
+            .alpha(if (enabled) 1f else 0.38f),
+        contentAlignment = Alignment.Center
+    ) {
         Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = stringResource(id = R.string.more_options_tooltip)
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(21.dp),
+            tint = MaterialTheme.colorScheme.onSurface
         )
     }
-    DropdownMenu(
-        expanded = showMenu,
-        onDismissRequest = { showMenu = false }
+}
+
+private val SiteFilterIcon: ImageVector = ImageVector.Builder(
+    name = "PolymarketSliders18",
+    defaultWidth = 18.dp,
+    defaultHeight = 18.dp,
+    viewportWidth = 18f,
+    viewportHeight = 18f
+).apply {
+    path(
+        fill = null,
+        stroke = SolidColor(Color.Black),
+        strokeLineWidth = 1.5f,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round
     ) {
-        DropdownMenuItem(
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = null
-                )
-            },
-            text = { Text(stringResource(id = R.string.about_app_title)) },
-            onClick = {
-                showMenu = false
-                onNavigateToAbout()
-            }
-        )
+        moveTo(13.25f, 5.25f)
+        lineTo(16.25f, 5.25f)
+        moveTo(1.75f, 5.25f)
+        lineTo(8.75f, 5.25f)
+        moveTo(4.75f, 12.75f)
+        lineTo(1.75f, 12.75f)
+        moveTo(16.25f, 12.75f)
+        lineTo(9.25f, 12.75f)
+        moveTo(13.25f, 5.25f)
+        curveTo(13.25f, 6.49f, 12.24f, 7.5f, 11f, 7.5f)
+        curveTo(9.76f, 7.5f, 8.75f, 6.49f, 8.75f, 5.25f)
+        curveTo(8.75f, 4.01f, 9.76f, 3f, 11f, 3f)
+        curveTo(12.24f, 3f, 13.25f, 4.01f, 13.25f, 5.25f)
+        close()
+        moveTo(9.25f, 12.75f)
+        curveTo(9.25f, 13.99f, 8.24f, 15f, 7f, 15f)
+        curveTo(5.76f, 15f, 4.75f, 13.99f, 4.75f, 12.75f)
+        curveTo(4.75f, 11.51f, 5.76f, 10.5f, 7f, 10.5f)
+        curveTo(8.24f, 10.5f, 9.25f, 11.51f, 9.25f, 12.75f)
+        close()
+    }
+}.build()
 
-        HorizontalDivider()
-
-        DropdownMenuItem(
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
-                    contentDescription = null
-                )
-            },
-            text = { Text(stringResource(id = R.string.settings_menu_title)) },
-            onClick = {
-                showMenu = false
-                onNavigateToSettings()
-            }
-        )
+@Composable
+private fun AppMenuDrawer(
+    onNavigateToSettings: (() -> Unit)?,
+    onNavigateToAbout: (() -> Unit)?,
+    onDismiss: () -> Unit,
+) {
+    ModalDrawerSheet(
+        drawerContainerColor = MaterialTheme.colorScheme.surface,
+        drawerContentColor = MaterialTheme.colorScheme.onSurface
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        if (onNavigateToAbout != null) {
+            NavigationDrawerItem(
+                icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
+                label = { Text(stringResource(id = R.string.about_app_title)) },
+                selected = false,
+                onClick = {
+                    onDismiss()
+                    onNavigateToAbout.invoke()
+                },
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+        }
+        if (onNavigateToSettings != null) {
+            NavigationDrawerItem(
+                icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
+                label = { Text(stringResource(id = R.string.settings_menu_title)) },
+                selected = false,
+                onClick = {
+                    onDismiss()
+                    onNavigateToSettings.invoke()
+                },
+                modifier = Modifier.padding(horizontal = 12.dp)
+            )
+        }
     }
 }
 
@@ -601,6 +714,148 @@ private fun getIconForSortOrder(orderKey: PolymarketEventsSortOrder): ImageVecto
 }
 
 @Composable
+private fun MarketFiltersSheet(
+    selectedTagSlug: String,
+    selectedSortOrder: PolymarketEventsSortOrder,
+    hiddenFilterSlugs: Set<String>,
+    onBrowseFilterSelected: (String, PolymarketEventsSortOrder?) -> Unit,
+    onSortOrderSelected: (PolymarketEventsSortOrder) -> Unit,
+    onToggleHiddenFilter: (String) -> Unit,
+    onClearHiddenFilters: () -> Unit,
+) {
+    Column(modifier = Modifier.padding(bottom = 20.dp)) {
+        FilterSheetSectionTitle("Browse")
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            item {
+                FilterActionChip(
+                    label = "New",
+                    selected = selectedTagSlug == POLYMARKET_EVENTS_SLUG_NEW,
+                    onClick = { onBrowseFilterSelected(POLYMARKET_EVENTS_SLUG_NEW, PolymarketEventsSortOrder.NEWEST) }
+                )
+            }
+            item {
+                FilterActionChip(
+                    label = "Trending",
+                    icon = Icons.AutoMirrored.Filled.TrendingUp,
+                    selected = selectedTagSlug == POLYMARKET_EVENTS_SLUG_TRENDING,
+                    onClick = { onBrowseFilterSelected(POLYMARKET_EVENTS_SLUG_TRENDING, PolymarketEventsSortOrder.VOLUME_24H) }
+                )
+            }
+            item {
+                FilterActionChip(
+                    label = "Popular",
+                    icon = Icons.Filled.LocalFireDepartment,
+                    selected = selectedSortOrder == PolymarketEventsSortOrder.VOLUME_TOTAL && selectedTagSlug !in siteFeedSlugs,
+                    onClick = { onSortOrderSelected(PolymarketEventsSortOrder.VOLUME_TOTAL) }
+                )
+            }
+            item {
+                FilterActionChip(
+                    label = "Liquid",
+                    icon = Icons.Filled.WaterDrop,
+                    selected = selectedSortOrder == PolymarketEventsSortOrder.LIQUIDITY,
+                    onClick = { onSortOrderSelected(PolymarketEventsSortOrder.LIQUIDITY) }
+                )
+            }
+            item {
+                FilterActionChip(
+                    label = "Ending Soon",
+                    icon = Icons.Filled.HourglassBottom,
+                    selected = selectedSortOrder == PolymarketEventsSortOrder.ENDING_SOON,
+                    onClick = { onSortOrderSelected(PolymarketEventsSortOrder.ENDING_SOON) }
+                )
+            }
+            item {
+                FilterActionChip(
+                    label = "Competitive",
+                    icon = Icons.Filled.StarOutline,
+                    selected = selectedSortOrder == PolymarketEventsSortOrder.COMPETITIVE,
+                    onClick = { onSortOrderSelected(PolymarketEventsSortOrder.COMPETITIVE) }
+                )
+            }
+        }
+
+        FilterSheetSectionTitle("Quick filters")
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            item {
+                FilterActionChip(
+                    label = "All",
+                    selected = selectedTagSlug == POLYMARKET_EVENTS_SLUG_ALL && hiddenFilterSlugs.isEmpty(),
+                    onClick = {
+                        onClearHiddenFilters()
+                        onBrowseFilterSelected(POLYMARKET_EVENTS_SLUG_ALL, PolymarketEventsSortOrder.DEFAULT_SORT_ORDER)
+                    }
+                )
+            }
+            item {
+                FilterActionChip(
+                    label = "Active",
+                    selected = true,
+                    onClick = {}
+                )
+            }
+            siteHiddenFilters.forEach { filter ->
+                item {
+                    FilterActionChip(
+                        label = "Hide ${filter.label.lowercase()}",
+                        selected = hiddenFilterSlugs.contains(filter.slug),
+                        onClick = { onToggleHiddenFilter(filter.slug) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterSheetSectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .padding(top = 14.dp, bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun FilterActionChip(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: ImageVector? = null,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        leadingIcon = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        },
+        label = { Text(label) },
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    )
+}
+
+@Composable
 private fun TagsRow(
     tags: List<TagDto>,
     areTagsLoading: Boolean,
@@ -609,15 +864,32 @@ private fun TagsRow(
 ) {
     val watchlistTag = TagDto(id = POLYMARKET_EVENTS_SLUG_WATCHLIST, label = stringResource(R.string.tag_watchlist), slug = POLYMARKET_EVENTS_SLUG_WATCHLIST, forceShow = true)
     val allTag = TagDto(id = POLYMARKET_EVENTS_SLUG_ALL, label = stringResource(R.string.tag_all), slug = POLYMARKET_EVENTS_SLUG_ALL, forceShow = true)
-    val uniqueTags = tags.filter { !it.slug.equals(POLYMARKET_EVENTS_SLUG_ALL, ignoreCase = true) }
-    val displayTags = listOf(watchlistTag, allTag) + uniqueTags
+    val siteFeedTags = listOf(
+        TagDto(id = "hardcoded-trending", label = "Trending", slug = POLYMARKET_EVENTS_SLUG_TRENDING, forceShow = true),
+        TagDto(id = "hardcoded-breaking", label = "Breaking", slug = POLYMARKET_EVENTS_SLUG_BREAKING, forceShow = true),
+        TagDto(id = "hardcoded-new", label = "New", slug = POLYMARKET_EVENTS_SLUG_NEW, forceShow = true),
+    )
+    val hardcodedTags = buildList {
+        add(TagDto(id = "hardcoded-politics", label = "Politics", slug = "politics", forceShow = true))
+        add(TagDto(id = "hardcoded-sports", label = "Sports", slug = "sports", forceShow = true))
+        add(TagDto(id = "hardcoded-crypto", label = "Crypto", slug = "crypto", forceShow = true))
+        add(TagDto(id = "hardcoded-tech", label = "Tech", slug = "tech", forceShow = true))
+        val aiTag = tags.firstOrNull { it.slug.equals("ai", ignoreCase = true) }
+        add(TagDto(id = "hardcoded-ai", label = aiTag?.label ?: "AI", slug = aiTag?.slug ?: "ai", forceShow = true))
+        tags.firstOrNull { it.slug.equals("dead-by-daylight", ignoreCase = true) }?.let {
+            add(TagDto(id = "hardcoded-dead-by-daylight", label = "Dead by Daylight", slug = it.slug, forceShow = true))
+        }
+    }
+    val pinnedTagSlugs = (listOf(watchlistTag, allTag) + siteFeedTags + hardcodedTags).map { it.slug.lowercase() }.toSet()
+    val uniqueTags = tags.filter { it.slug.lowercase() !in pinnedTagSlugs }
+    val displayTags = listOf(watchlistTag, allTag) + siteFeedTags + hardcodedTags + uniqueTags
 
     LazyRow(
         modifier = Modifier
             .fillMaxWidth()
-            .height(FilterChipDefaults.Height + 8.dp * 2), // Approximate height for consistency
-        contentPadding = PaddingValues(horizontal = 12.dp/*, vertical = 8.dp*/),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .height(FilterChipDefaults.Height + 12.dp * 2),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (areTagsLoading) {
             item { // Use item within LazyRow to place the indicator
@@ -649,26 +921,56 @@ private fun TagChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val leadingIcon = tagIconFor(tag.slug, isSelected)
+
     FilterChip(
         selected = isSelected,
         onClick = onClick,
-        label = {
-            if (tag.slug == POLYMARKET_EVENTS_SLUG_WATCHLIST) {
+        leadingIcon = leadingIcon?.let {
+            {
                 Icon(
-                    imageVector = if (isSelected) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = tag.label,
+                    imageVector = it,
+                    contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
-            } else {
-                Text(tag.label)
             }
         },
+        label = {
+            Text(tag.label)
+        },
         colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
             selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            iconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer
         )
     )
 }
+
+private fun tagIconFor(tagSlug: String, isSelected: Boolean): ImageVector? {
+    return when (tagSlug) {
+        POLYMARKET_EVENTS_SLUG_WATCHLIST -> if (isSelected) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder
+        POLYMARKET_EVENTS_SLUG_TRENDING -> Icons.AutoMirrored.Filled.TrendingUp
+        POLYMARKET_EVENTS_SLUG_BREAKING -> Icons.Filled.LocalFireDepartment
+        else -> null
+    }
+}
+
+private data class HiddenSiteFilter(val label: String, val slug: String)
+
+private val siteFeedSlugs = setOf(
+    POLYMARKET_EVENTS_SLUG_TRENDING,
+    POLYMARKET_EVENTS_SLUG_BREAKING,
+    POLYMARKET_EVENTS_SLUG_NEW,
+)
+
+private val siteHiddenFilters = listOf(
+    HiddenSiteFilter(label = "Sports", slug = "sports"),
+    HiddenSiteFilter(label = "Crypto", slug = "crypto"),
+    HiddenSiteFilter(label = "Earnings", slug = "earnings"),
+)
 
 
 // ====== Preview ========
@@ -713,11 +1015,15 @@ private fun TemplateEventListScreenPreview_Success(isSelectWidgetMode: Boolean) 
             canLoadMore = true,
             selectedTagSlug = "crypto",
             selectedSortOrder = PolymarketEventsSortOrder.NEWEST,
+            hiddenFilterSlugs = emptySet(),
             watchlistIds = emptySet(),
             onRefresh = {},
             onLoadMore = {},
             onTagSelected = {},
+            onBrowseFilterSelected = { _, _ -> },
             onSortOrderSelected = {},
+            onToggleHiddenFilter = {},
+            onClearHiddenFilters = {},
             onRetry = {},
             onToggleWatchlist = {},
             onEventClick = {},
@@ -757,11 +1063,15 @@ private fun EventListScreenPreview_Loading() {
             canLoadMore = false,
             selectedTagSlug = POLYMARKET_EVENTS_SLUG_ALL,
             selectedSortOrder = PolymarketEventsSortOrder.DEFAULT_SORT_ORDER,
+            hiddenFilterSlugs = emptySet(),
             watchlistIds = emptySet(),
             onRefresh = {},
             onLoadMore = {},
             onTagSelected = {},
+            onBrowseFilterSelected = { _, _ -> },
             onSortOrderSelected = {},
+            onToggleHiddenFilter = {},
+            onClearHiddenFilters = {},
             onRetry = {},
             onToggleWatchlist = {},
             onEventClick = {},
@@ -790,11 +1100,15 @@ private fun EventListScreenPreview_EmptyWatchlist() {
             canLoadMore = false,
             selectedTagSlug = POLYMARKET_EVENTS_SLUG_WATCHLIST,
             selectedSortOrder = PolymarketEventsSortOrder.DEFAULT_SORT_ORDER,
+            hiddenFilterSlugs = emptySet(),
             watchlistIds = emptySet(),
             onRefresh = {},
             onLoadMore = {},
             onTagSelected = {},
+            onBrowseFilterSelected = { _, _ -> },
             onSortOrderSelected = {},
+            onToggleHiddenFilter = {},
+            onClearHiddenFilters = {},
             onRetry = {},
             onToggleWatchlist = {},
             onEventClick = {},
@@ -826,11 +1140,15 @@ private fun EventListScreenPreview_Error() {
             canLoadMore = false,
             selectedTagSlug = POLYMARKET_EVENTS_SLUG_ALL,
             selectedSortOrder = PolymarketEventsSortOrder.DEFAULT_SORT_ORDER,
+            hiddenFilterSlugs = emptySet(),
             watchlistIds = emptySet(),
             onRefresh = {},
             onLoadMore = {},
             onTagSelected = {},
+            onBrowseFilterSelected = { _, _ -> },
             onSortOrderSelected = {},
+            onToggleHiddenFilter = {},
+            onClearHiddenFilters = {},
             onRetry = {},
             onToggleWatchlist = {},
             onEventClick = {},
@@ -862,11 +1180,15 @@ private fun EventListScreenPreview_ErrorWithDnsHint() {
             canLoadMore = false,
             selectedTagSlug = POLYMARKET_EVENTS_SLUG_ALL,
             selectedSortOrder = PolymarketEventsSortOrder.DEFAULT_SORT_ORDER,
+            hiddenFilterSlugs = emptySet(),
             watchlistIds = emptySet(),
             onRefresh = {},
             onLoadMore = {},
             onTagSelected = {},
+            onBrowseFilterSelected = { _, _ -> },
             onSortOrderSelected = {},
+            onToggleHiddenFilter = {},
+            onClearHiddenFilters = {},
             onRetry = {},
             onToggleWatchlist = {},
             onEventClick = {},

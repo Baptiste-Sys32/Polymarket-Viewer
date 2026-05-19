@@ -57,6 +57,7 @@ class PolymarketRepositoryImpl(
         order: PolymarketEventsSortOrder,
         excludeTagIds: List<Long>?,
         ids: List<String>?,
+        newOnly: Boolean?,
         forceRefresh: Boolean,
     ): Result<PaginationDataDto<EventDto>> {
         val orderString = when (order) {
@@ -81,6 +82,7 @@ class PolymarketRepositoryImpl(
                 tagSlug = tagSlug,
                 archived = archived,
                 closed = closed,
+                new = newOnly,
                 order = orderString,
                 ascending = isAscending,
                 excludeTagIds = excludeTagIds,

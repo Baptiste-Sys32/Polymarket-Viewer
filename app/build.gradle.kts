@@ -22,7 +22,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.streamatico.polymarketviewer"
+        applicationId = "com.badeparday.polymarketwatcher"
         minSdk = 27
         //noinspection OldTargetApi
         targetSdk = 36

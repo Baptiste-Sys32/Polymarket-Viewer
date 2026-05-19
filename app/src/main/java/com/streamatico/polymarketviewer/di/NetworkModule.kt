@@ -117,7 +117,7 @@ private fun createHttpClient(context: Context, baseUrl: String, dns: Dns): HttpC
         }
 
         install(UserAgent) {
-            agent = "PolymarketViewer/${BuildConfig.VERSION_NAME}"
+            agent = "PolymarketWatcher/${BuildConfig.VERSION_NAME}"
         }
 
         // Content negotiation for JSON serialization/deserialization

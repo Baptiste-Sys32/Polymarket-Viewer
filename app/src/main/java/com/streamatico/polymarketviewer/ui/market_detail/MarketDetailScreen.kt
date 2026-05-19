@@ -1,6 +1,8 @@
 package com.streamatico.polymarketviewer.ui.market_detail
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,12 +10,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
@@ -26,6 +29,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -101,7 +105,11 @@ private fun MarketDetailContent(
                             contentDescription = stringResource(R.string.navigate_back)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { paddingValues ->
@@ -168,8 +176,10 @@ fun MarketDetailsContent(market: MarketDto, modifier: Modifier = Modifier) {
                     contentDescription = "Market image",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(MaterialTheme.shapes.medium),
-                    contentScale = ContentScale.FillWidth
+                        .aspectRatio(16f / 9f)
+                        .clip(MaterialTheme.shapes.medium)
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Fit
                 )
                 Spacer(modifier = Modifier.height(16.dp)) // Space between image and title
             }
@@ -213,7 +223,9 @@ fun MarketDetailsContent(market: MarketDto, modifier: Modifier = Modifier) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                 shape = MaterialTheme.shapes.medium
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -248,17 +260,24 @@ fun MarketDetailsContent(market: MarketDto, modifier: Modifier = Modifier) {
 
         // --- Outcomes list --- //
         if (outcomePricePairs.isNotEmpty()) {
+            val leadingOutcomeIndex = if (outcomePricePairs.size == 2) {
+                outcomePricePairs.indices.maxByOrNull { outcomePricePairs[it].second }
+            } else {
+                null
+            }
+
             item { // Header for outcomes
                 Text("Outcomes:", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(bottom = 8.dp))
-                HorizontalDivider() // Keep divider above list
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.34f))
             }
-            items(outcomePricePairs) { (outcome, price) ->
+            itemsIndexed(outcomePricePairs) { index, (outcome, price) ->
                 MarketOutcomeRow(
                     outcomeText = outcome,
                     price = price,
+                    isLeadingOutcome = index == leadingOutcomeIndex,
                     //marketVolume = market.volume
                 )
-                HorizontalDivider() // Divider between outcomes
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.22f))
             }
         }
     }
@@ -280,6 +299,7 @@ private fun InfoRow(label: String, value: String) {
 private fun MarketOutcomeRow(
     outcomeText: String,
     price: Double?,
+    isLeadingOutcome: Boolean,
     //marketVolume: Double?
 ) {
     Column(
@@ -295,22 +315,28 @@ private fun MarketOutcomeRow(
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
                 Text(
                     text = outcomeText,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = if (isLeadingOutcome) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isLeadingOutcome) FontWeight.Bold else FontWeight.Normal,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
                 text = UiFormatter.formatPriceAsPercentage(price),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = if (isLeadingOutcome) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+                fontWeight = if (isLeadingOutcome) FontWeight.ExtraBold else FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
             )
         }
         price?.let {
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
                 progress = { it.toFloat() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (isLeadingOutcome) 10.dp else 8.dp),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         }
     }

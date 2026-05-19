@@ -18,25 +18,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = Color(0xFF4EA8FF),
+    onPrimary = Color(0xFF001B33),
+    primaryContainer = Color(0xFF0C2A43),
+    onPrimaryContainer = Color(0xFFD7EBFF),
+    secondary = Color(0xFF8ED4FF),
+    onSecondary = Color(0xFF002033),
+    tertiary = Color(0xFFFFB86B),
+    background = Color.Black,
+    onBackground = Color(0xFFECEFF1),
+    surface = Color(0xFF0A0A0A),
+    onSurface = Color(0xFFECEFF1),
+    surfaceVariant = Color(0xFF151515),
+    onSurfaceVariant = Color(0xFFB8C0C4),
+    outline = Color(0xFF30363A),
+    error = Color(0xFFFF6B6B)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = Moss,
     onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primaryContainer = Color(0xFFD8EADF),
+    onPrimaryContainer = Color(0xFF082F21),
+    secondary = Brass,
+    tertiary = Signal,
+    background = Paper,
+    onBackground = Ink,
+    surface = Porcelain,
+    onSurface = Ink,
+    surfaceVariant = Mist,
+    onSurfaceVariant = Graphite,
+    outline = Zinc,
+    error = Signal
 )
 
 // Define the structure for custom colors
@@ -72,9 +85,9 @@ private val LocalExtendedColors = staticCompositionLocalOf { lightExtendedColors
 
 @Composable
 fun PolymarketAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = true,
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val baseColorScheme = getPolymarketColorScheme(

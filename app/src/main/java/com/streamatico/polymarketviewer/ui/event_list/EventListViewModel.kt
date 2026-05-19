@@ -45,6 +45,8 @@ class EventListViewModel(
     // --- Sorting --- //
     private val _selectedSortOrder = MutableStateFlow(PolymarketEventsSortOrder.DEFAULT_SORT_ORDER) // Default sort
     val selectedSortOrder: StateFlow<PolymarketEventsSortOrder> = _selectedSortOrder.asStateFlow()
+    private val _hiddenFilterSlugs = MutableStateFlow<Set<String>>(emptySet())
+    val hiddenFilterSlugs: StateFlow<Set<String>> = _hiddenFilterSlugs.asStateFlow()
 
     // --- Pagination & Loading State --- //
     private val _isRefreshing = MutableStateFlow(false)
@@ -121,11 +123,41 @@ class EventListViewModel(
         }
     }
 
+    fun selectBrowseFilter(tagSlug: String, order: PolymarketEventsSortOrder? = null) {
+        val changedTag = _selectedTagSlug.value != tagSlug
+        val changedOrder = order != null && _selectedSortOrder.value != order
+        if (!changedTag && !changedOrder) return
+
+        _selectedTagSlug.value = tagSlug
+        if (order != null) {
+            _selectedSortOrder.value = order
+        }
+        viewModelScope.launch {
+            userPreferencesRepository.setWatchlistSelected(tagSlug == POLYMARKET_EVENTS_SLUG_WATCHLIST)
+        }
+        loadEventsInternal(LoadMode.INITIAL)
+    }
+
     fun selectSortOrder(order: PolymarketEventsSortOrder) {
         if (_selectedSortOrder.value != order) {
             _selectedSortOrder.value = order
             loadEventsInternal(LoadMode.INITIAL)
         }
+    }
+
+    fun toggleHiddenFilter(tagSlug: String) {
+        _hiddenFilterSlugs.value = if (_hiddenFilterSlugs.value.contains(tagSlug)) {
+            _hiddenFilterSlugs.value - tagSlug
+        } else {
+            _hiddenFilterSlugs.value + tagSlug
+        }
+        loadEventsInternal(LoadMode.INITIAL)
+    }
+
+    fun clearHiddenFilters() {
+        if (_hiddenFilterSlugs.value.isEmpty()) return
+        _hiddenFilterSlugs.value = emptySet()
+        loadEventsInternal(LoadMode.INITIAL)
     }
 
     fun toggleWatchlist(eventId: String) {
@@ -185,6 +217,7 @@ class EventListViewModel(
             requestId = requestId,
             selectedTag = selectedTag,
             selectedSortOrder = selectedSortOrder,
+            hiddenTagSlugs = _hiddenFilterSlugs.value,
             offset = offsetToLoad,
         )
     }
@@ -210,9 +243,10 @@ class EventListViewModel(
                     tagSlug = null,
                     archived = null,
                     closed = null,
-                    order = loadContext.selectedSortOrder,
-                    excludeTagIds = excludeTagIdsFor(loadContext.selectedSortOrder),
+                    order = effectiveSortOrder(loadContext),
+                    excludeTagIds = excludeTagIdsFor(effectiveSortOrder(loadContext)),
                     ids = watchlistEventIds,
+                    newOnly = null,
                     forceRefresh = loadContext.mode == LoadMode.REFRESH,
                 )
             )
@@ -222,15 +256,25 @@ class EventListViewModel(
             EventQuerySpec(
                 active = true,
                 offset = loadContext.offset,
-                tagSlug = loadContext.selectedTag.takeUnless { it == POLYMARKET_EVENTS_SLUG_ALL },
+                tagSlug = loadContext.selectedTag.takeUnless { it in syntheticFeedSlugs },
                 archived = false,
                 closed = false,
-                order = loadContext.selectedSortOrder,
-                excludeTagIds = excludeTagIdsFor(loadContext.selectedSortOrder),
+                order = effectiveSortOrder(loadContext),
+                excludeTagIds = excludeTagIdsFor(effectiveSortOrder(loadContext)),
                 ids = null,
+                newOnly = loadContext.selectedTag == POLYMARKET_EVENTS_SLUG_NEW,
                 forceRefresh = loadContext.mode == LoadMode.REFRESH,
             )
         )
+    }
+
+    private fun effectiveSortOrder(loadContext: LoadContext): PolymarketEventsSortOrder {
+        return when (loadContext.selectedTag) {
+            POLYMARKET_EVENTS_SLUG_NEW -> PolymarketEventsSortOrder.NEWEST
+            POLYMARKET_EVENTS_SLUG_BREAKING -> PolymarketEventsSortOrder.VOLUME_24H
+            POLYMARKET_EVENTS_SLUG_TRENDING -> PolymarketEventsSortOrder.VOLUME_24H
+            else -> loadContext.selectedSortOrder
+        }
     }
 
     private fun handleEmptyWatchlist(loadContext: LoadContext) {
@@ -263,6 +307,7 @@ class EventListViewModel(
                     order = querySpec.order,
                     excludeTagIds = querySpec.excludeTagIds,
                     ids = querySpec.ids,
+                    newOnly = querySpec.newOnly,
                     forceRefresh = querySpec.forceRefresh,
                 )
 
@@ -293,10 +338,15 @@ class EventListViewModel(
         fetchedEvents: List<EventDto>,
     ) {
         _canLoadMore.value = fetchedEvents.size == PAGE_SIZE
+        val filteredEvents = fetchedEvents.filterNot { event ->
+            loadContext.hiddenTagSlugs.any { hiddenSlug ->
+                event.tags.orEmpty().any { it.slug.equals(hiddenSlug, ignoreCase = true) }
+            }
+        }
         val combinedEvents = if (loadContext.mode == LoadMode.PAGINATION) {
-            currentVisibleEvents() + fetchedEvents
+            currentVisibleEvents() + filteredEvents
         } else {
-            fetchedEvents
+            filteredEvents
         }
         val uniqueEvents = combinedEvents.distinctBy { it.id }
         loadTracker.currentOffset = uniqueEvents.size
@@ -413,6 +463,7 @@ private data class LoadContext(
     val requestId: Long,
     val selectedTag: String,
     val selectedSortOrder: PolymarketEventsSortOrder,
+    val hiddenTagSlugs: Set<String>,
     val offset: Int,
 )
 
@@ -425,6 +476,7 @@ private data class EventQuerySpec(
     val order: PolymarketEventsSortOrder,
     val excludeTagIds: List<Long>?,
     val ids: List<String>?,
+    val newOnly: Boolean?,
     val forceRefresh: Boolean,
 )
 
@@ -454,5 +506,15 @@ private const val TAG = "EventListViewModel"
 
 const val POLYMARKET_EVENTS_SLUG_ALL = "all"
 const val POLYMARKET_EVENTS_SLUG_WATCHLIST = "watchlist"
+const val POLYMARKET_EVENTS_SLUG_TRENDING = "trending"
+const val POLYMARKET_EVENTS_SLUG_BREAKING = "breaking"
+const val POLYMARKET_EVENTS_SLUG_NEW = "new"
+
+private val syntheticFeedSlugs = setOf(
+    POLYMARKET_EVENTS_SLUG_ALL,
+    POLYMARKET_EVENTS_SLUG_TRENDING,
+    POLYMARKET_EVENTS_SLUG_BREAKING,
+    POLYMARKET_EVENTS_SLUG_NEW,
+)
 
 private const val POLYMARKET_GAMES_TAG_ID: Long = 100639

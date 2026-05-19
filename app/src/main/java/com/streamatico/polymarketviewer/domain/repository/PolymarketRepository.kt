@@ -35,6 +35,7 @@ interface PolymarketRepository {
         order: PolymarketEventsSortOrder,
         excludeTagIds: List<Long>? = null,
         ids: List<String>? = null,
+        newOnly: Boolean? = null,
         forceRefresh: Boolean = false,
     ): Result<PaginationDataDto<EventDto>>
 

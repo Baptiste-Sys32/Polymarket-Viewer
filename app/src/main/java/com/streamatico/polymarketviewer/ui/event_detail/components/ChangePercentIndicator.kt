@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.streamatico.polymarketviewer.R
 import com.streamatico.polymarketviewer.ui.theme.ExtendedTheme
@@ -20,7 +21,8 @@ import kotlin.math.abs
 @Composable
 internal fun ChangePercentIndicator(
     priceChangePercent: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    fontWeight: FontWeight = FontWeight.Normal
 ) {
     val changeColor: Color
     val changeIcon: ImageVector
@@ -54,6 +56,7 @@ internal fun ChangePercentIndicator(
             text = "${abs(priceChangePercent)}%",
             style = MaterialTheme.typography.labelLarge,
             color = changeColor,
+            fontWeight = fontWeight
         )
     }
 }

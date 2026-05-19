@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 data class UserPreferences( // Data class to hold related preferences
-    val analyticsEnabled: Boolean = true, // Opt-out: enabled by default
+    val analyticsEnabled: Boolean = false,
     val isFirstLaunch: Boolean = true, // True until first analytics ping is sent
     val watchlistIds: Set<String> = emptySet(),
     val isWatchlistSelected: Boolean = false,
@@ -21,7 +21,7 @@ class UserPreferencesRepository(
     val userPreferencesFlow: Flow<UserPreferences> = dataStore.data
         .map { preferences ->
             UserPreferences(
-                analyticsEnabled = preferences[PreferenceKeys.ANALYTICS_ENABLED] ?: true,
+                analyticsEnabled = false,
                 isFirstLaunch = preferences[PreferenceKeys.IS_FIRST_LAUNCH] ?: true,
                 watchlistIds = preferences[PreferenceKeys.WATCHLIST_EVENT_IDS] ?: emptySet(),
                 isWatchlistSelected = preferences[PreferenceKeys.IS_WATCHLIST_SELECTED] ?: false,

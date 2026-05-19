@@ -1,14 +1,19 @@
 package com.streamatico.polymarketviewer.ui.event_detail.components
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,9 +59,10 @@ fun EventHeader(
                 contentDescription = event.title,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(2f)
-                    .clip(MaterialTheme.shapes.medium),
-                contentScale = ContentScale.Crop
+                    .aspectRatio(16f / 9f)
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -128,28 +134,38 @@ fun EventHeader(
         Column(
             modifier = Modifier.padding(vertical = 16.dp)
         ) {
-            event.volume?.let {
-                InfoRow(label = "Total Volume", value = UiFormatter.formatLargeValueUsd(it))
-                EventHeaderHorizontalSpacer()
-            }
-            event.category?.let {
-                InfoRow(label = "Category", value = it)
-                EventHeaderHorizontalSpacer()
-            }
-            event.startDate?.let {
-                InfoRow(label = "Starts", value = UiFormatter.formatDateTimeLong(it))
-                EventHeaderHorizontalSpacer()
-            }
-            event.endDate?.let {
-                InfoRow(label = "Ends (estimated)", value = UiFormatter.formatDateTimeLong(it))
-                EventHeaderHorizontalSpacer()
-            }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    event.volume?.let {
+                        InfoRow(label = "Total Volume", value = UiFormatter.formatLargeValueUsd(it))
+                        EventHeaderHorizontalSpacer()
+                    }
+                    event.category?.let {
+                        InfoRow(label = "Category", value = it)
+                        EventHeaderHorizontalSpacer()
+                    }
+                    event.startDate?.let {
+                        InfoRow(label = "Starts", value = UiFormatter.formatDateTimeLong(it))
+                        EventHeaderHorizontalSpacer()
+                    }
+                    event.endDate?.let {
+                        InfoRow(label = "Ends (estimated)", value = UiFormatter.formatDateTimeLong(it))
+                        EventHeaderHorizontalSpacer()
+                    }
 
-            InfoRow(label = "Status", value = getEventStatusText(event))
-            EventHeaderHorizontalSpacer()
+                    InfoRow(label = "Status", value = getEventStatusText(event))
+                    EventHeaderHorizontalSpacer()
 
-            event.resolutionSource?.takeIf { it.isNotBlank() }?.let {
-                InfoRow(label = "Resolution Source", value = it)
+                    event.resolutionSource?.takeIf { it.isNotBlank() }?.let {
+                        InfoRow(label = "Resolution Source", value = it)
+                    }
+                }
             }
         }
     }
@@ -170,9 +186,9 @@ private fun getEventStatusText(event: EventDto): String {
 
 @Composable
 private fun InfoRow(label: String, value: String) {
-    androidx.compose.foundation.layout.Row {
+    Row {
         Text("$label: ", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-        Text(value, style = MaterialTheme.typography.bodyMedium)
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -186,4 +202,3 @@ private fun EventHeaderPreview() {
         )
     }
 }
-

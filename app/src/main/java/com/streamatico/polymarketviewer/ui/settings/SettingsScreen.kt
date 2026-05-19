@@ -1,5 +1,6 @@
 package com.streamatico.polymarketviewer.ui.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +26,7 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,10 +53,8 @@ fun SettingsScreen(
 
     SettingsScreenContent(
         onNavigateBack = onNavigateBack,
-        analyticsEnabled = userPreferences?.analyticsEnabled,
         dohEnabled = userPreferences?.dohEnabled,
         dohProvider = userPreferences?.dohProvider,
-        onAnalyticsEnabledChange = viewModel::setAnalyticsEnabled,
         onDohEnabledChange = viewModel::setDohEnabled,
         onDohProviderSelected = viewModel::setDohProvider
     )
@@ -64,10 +64,8 @@ fun SettingsScreen(
 @Composable
 private fun SettingsScreenContent(
     onNavigateBack: () -> Unit,
-    analyticsEnabled: Boolean?,
     dohEnabled: Boolean?,
     dohProvider: DnsOverHttpsProvider?,
-    onAnalyticsEnabledChange: (Boolean) -> Unit,
     onDohEnabledChange: (Boolean) -> Unit,
     onDohProviderSelected: (DnsOverHttpsProvider) -> Unit
 ) {
@@ -85,7 +83,11 @@ private fun SettingsScreenContent(
                             contentDescription = stringResource(id = R.string.navigate_back)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { paddingValues ->
@@ -182,37 +184,6 @@ private fun SettingsScreenContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            SettingsCard {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(id = R.string.analytics_title),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(id = R.string.analytics_description),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    if (analyticsEnabled == null) {
-                        CircularProgressIndicator()
-                    } else {
-                        Switch(
-                            checked = analyticsEnabled,
-                            onCheckedChange = onAnalyticsEnabledChange
-                        )
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
@@ -223,12 +194,12 @@ private fun SettingsScreenContent(
 private fun SettingsCard(
     content: @Composable () -> Unit
 ) {
-    ElevatedCard(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
         shape = MaterialTheme.shapes.medium
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -243,10 +214,8 @@ private fun SettingsScreenPreview() {
     PolymarketAppTheme {
         SettingsScreenContent(
             onNavigateBack = {},
-            analyticsEnabled = true,
             dohEnabled = true,
             dohProvider = DnsOverHttpsProvider.CLOUDFLARE,
-            onAnalyticsEnabledChange = {},
             onDohEnabledChange = {},
             onDohProviderSelected = {}
         )
@@ -259,13 +228,10 @@ private fun SettingsScreenDisabledPreview() {
     PolymarketAppTheme {
         SettingsScreenContent(
             onNavigateBack = {},
-            analyticsEnabled = false,
             dohEnabled = false,
             dohProvider = DnsOverHttpsProvider.GOOGLE,
-            onAnalyticsEnabledChange = {},
             onDohEnabledChange = {},
             onDohProviderSelected = {}
         )
     }
 }
-

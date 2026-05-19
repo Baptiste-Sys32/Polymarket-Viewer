@@ -21,7 +21,7 @@ fun EventTags(
     FlowRow(
         modifier = modifier
             .fillMaxWidth(),
-        horizontalArrangement = Arrangement.End,
+        horizontalArrangement = Arrangement.Center,
         verticalArrangement = Arrangement.Center,
         //verticalArrangement = Arrangement.spacedBy(2.dp), // Add vertical spacing for wrapped items
         maxLines = 2,
@@ -41,4 +41,3 @@ fun EventTags(
         }
     }
 }
-

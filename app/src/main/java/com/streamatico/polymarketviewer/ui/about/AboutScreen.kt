@@ -1,5 +1,6 @@
 package com.streamatico.polymarketviewer.ui.about
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,22 +17,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Code
-import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.streamatico.polymarketviewer.BuildConfig
@@ -40,10 +40,7 @@ import com.streamatico.polymarketviewer.ui.shared.components.AppLogoIcon
 import com.streamatico.polymarketviewer.ui.shared.components.MyScaffold
 import com.streamatico.polymarketviewer.ui.theme.PolymarketAppTheme
 
-const val PRIVACY_POLICY_URL = "https://streamatico.com/polymarketapp/privacy_policy"
-const val GITHUB_URL = "https://github.com/streamatico/PolymarketViewer"
-const val EMAIL_ADDRESS = "streamatico+polymarket@gmail.com"
-const val COMPANY_URL = "https://streamatico.com/"
+const val UPSTREAM_GITHUB_URL = "https://github.com/streamatico/PolymarketViewer"
 
 @Composable
 fun AboutScreen(
@@ -72,7 +69,11 @@ private fun AboutScreenContent(
                             contentDescription = stringResource(id = R.string.navigate_back)
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { paddingValues ->
@@ -98,7 +99,6 @@ private fun AboutScreenContent(
             )
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Clickable text with link to company website
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
@@ -110,11 +110,8 @@ private fun AboutScreenContent(
                 )
                 Text(
                     text = stringResource(R.string.company_name),
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.primary,
-                        textDecoration = TextDecoration.Underline
-                    ),
-                    modifier = Modifier.clickable { uriHandler.openUri(COMPANY_URL) }
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -130,20 +127,10 @@ private fun AboutScreenContent(
 
                 LinkItem(
                     icon = Icons.Outlined.Code,
-                    title = stringResource(id = R.string.source_code),
-                    subtitle = "GitHub",
+                    title = "Upstream source",
+                    subtitle = "GPL-3.0 base project",
                     contentDescription = stringResource(id = R.string.open_github),
-                    onClick = { uriHandler.openUri(GITHUB_URL) }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                LinkItem(
-                    icon = Icons.Outlined.Email,
-                    title = stringResource(id = R.string.contact_email),
-                    subtitle = EMAIL_ADDRESS,
-                    contentDescription = stringResource(id = R.string.send_email),
-                    onClick = { uriHandler.openUri("mailto:$EMAIL_ADDRESS") }
+                    onClick = { uriHandler.openUri(UPSTREAM_GITHUB_URL) }
                 )
             }
 
@@ -181,16 +168,6 @@ private fun AboutScreenContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Footer with Privacy Policy
-            Text(
-                text = stringResource(id = R.string.privacy_policy),
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = MaterialTheme.colorScheme.primary,
-                    textDecoration = TextDecoration.Underline
-                ),
-                modifier = Modifier.clickable { uriHandler.openUri(PRIVACY_POLICY_URL) }
-            )
-
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -200,14 +177,12 @@ private fun AboutScreenContent(
 private fun InfoCard(
     content: @Composable () -> Unit
 ) {
-    ElevatedCard(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 3.dp
-        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.34f)),
         shape = MaterialTheme.shapes.medium
     ) {
         Column(

@@ -3,7 +3,6 @@ package com.streamatico.polymarketviewer.ui.event_detail.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -31,7 +29,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.streamatico.polymarketviewer.R
@@ -63,19 +60,16 @@ fun LazyListScope.eventDetailMarketList(
         sortedMarkets
     }
 
-    val trendIndicatorEndPadding = visibleMarkets
-        .any { x -> x.oneDayPriceChange != null && displayOneDayPriceChange(x.oneDayPriceChange) }
-        .let {
-            if(it) 40.dp else 0.dp
-        }
-
     val hiddenMarketCount = sortedMarkets.size - MARKET_DISPLAY_LIMIT
+    val leadingMarketId = if (sortedMarkets.size > 1) {
+        sortedMarkets.maxByOrNull { it.yesPrice() ?: -1.0 }?.id
+    } else {
+        null
+    }
 
     item {
         Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(end = trendIndicatorEndPadding)
+            Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
@@ -102,11 +96,17 @@ fun LazyListScope.eventDetailMarketList(
     val isSingleMarket = sortedMarkets.size == 1
 
     items(visibleMarkets, key = { it.id }) { market ->
+        val isLeadingOutcome = if (isSingleMarket) {
+            market.yesPrice() != null && market.yesPrice() == market.outcomePrices.maxOrNull()
+        } else {
+            market.id == leadingMarketId
+        }
+
         EventDetailMarketRow(
             market = market,
             isSingleMarket = isSingleMarket,
+            isLeadingOutcome = isLeadingOutcome,
             showIcon = showMarketImages,
-            trendIndicatorEndPadding = trendIndicatorEndPadding,
             onClick = { onMarketClick(market.id) }
         )
     }
@@ -132,8 +132,8 @@ fun LazyListScope.eventDetailMarketList(
 private fun EventDetailMarketRow(
     market: MarketDto,
     isSingleMarket: Boolean,
+    isLeadingOutcome: Boolean,
     showIcon: Boolean,
-    trendIndicatorEndPadding: Dp,
     onClick: () -> Unit
 ) {
     val outcomeText = if (isSingleMarket) market.getYesTitle()
@@ -153,6 +153,7 @@ private fun EventDetailMarketRow(
             .padding(vertical = 12.dp)
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // --- Start Icon --- //
@@ -175,6 +176,7 @@ private fun EventDetailMarketRow(
                     Text(
                         text = outcomeText,
                         style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (isLeadingOutcome) FontWeight.Bold else FontWeight.Normal,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -210,37 +212,32 @@ private fun EventDetailMarketRow(
             Spacer(modifier = Modifier.width(16.dp))
 
             // Chance
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val isResolved = resolutionStatus == MarketResolutionStatus.RESOLVED
+                val isResolved = resolutionStatus == MarketResolutionStatus.RESOLVED
 
-                    val chanceText: String = if (isResolved) {
-                        market.getResolvedOutcome() ?: "??"
-                    } else {
-                        UiFormatter.formatPriceAsPercentage(price)
-                    }
+                val chanceText: String = if (isResolved) {
+                    market.getResolvedOutcome() ?: "??"
+                } else {
+                    UiFormatter.formatPriceAsPercentage(price)
+                }
 
-                    Text(
-                        modifier = Modifier.priceAlpha(price, isResolved),
-                        text = chanceText,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                Text(
+                    modifier = Modifier.priceAlpha(price, isResolved),
+                    text = chanceText,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = if (isLeadingOutcome) FontWeight.ExtraBold else FontWeight.Bold,
+                )
+
+                if (!isResolved && oneDayPriceChange != null && displayOneDayPriceChange(oneDayPriceChange)) {
+                    val priceChangePercent = (oneDayPriceChange * 100).toInt()
+                    ChangePercentIndicator(
+                        priceChangePercent = priceChangePercent,
+                        modifier = Modifier.padding(start = 4.dp),
+                        fontWeight = if (isLeadingOutcome) FontWeight.Bold else FontWeight.Normal
                     )
-
-                    Box(
-                        Modifier.widthIn(min = trendIndicatorEndPadding)
-                    ) {
-                        if (!isResolved && oneDayPriceChange != null && displayOneDayPriceChange(oneDayPriceChange)) {
-                            val priceChangePercent = (oneDayPriceChange * 100).toInt()
-                            ChangePercentIndicator(
-                                priceChangePercent,
-                                Modifier.padding(start = 4.dp)
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -251,7 +248,7 @@ private fun EventDetailMarketRow(
                 progress = { it.toFloat() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(end = trendIndicatorEndPadding)
+                    .height(if (isLeadingOutcome) 10.dp else 8.dp)
             )
         }
     }
@@ -279,4 +276,3 @@ private fun EventMarketsListPreview() {
         )
     }
 }
-

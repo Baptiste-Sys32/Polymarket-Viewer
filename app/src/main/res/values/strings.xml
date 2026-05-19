@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">Polymarket Viewer</string>
-    <string name="company_name">Streamatico</string>
+    <string name="app_name">Polymarket Watcher</string>
+    <string name="company_name">Private fork</string>
     <string name="about_app_title">About</string>
     <string name="settings_title">Settings</string>
     <string name="settings_menu_title">Settings</string>
@@ -9,7 +9,7 @@
     <string name="filter_tooltip">Sort Options</string>
     <string name="search_tooltip">Search</string>
     <string name="more_options_tooltip">More options</string>
-    <string name="developed_by">Developed by</string>
+    <string name="developed_by">Build</string>
     <string name="about_data_source_title">Data Source</string>
     <string name="about_data_source_text">This is an unofficial application that displays publicly available data from the Polymarket platform (polymarket.com).</string>
     <string name="about_disclaimer_title">Disclaimer</string>
@@ -25,8 +25,8 @@
     <string name="activity_title_reward">Rewards distributed for epoch</string>
 
     <!-- Analytics settings -->
-    <string name="analytics_title">Help Improve the App</string>
-    <string name="analytics_description">Send anonymous technical diagnostics, such as app version, Android version, language, and basic app events. This does not include your Polymarket account, positions, or trading activity.</string>
+    <string name="analytics_title">Diagnostics</string>
+    <string name="analytics_description">Diagnostics are disabled in this fork.</string>
 
     <!-- DNS-over-HTTPS settings -->
     <string name="doh_title">DNS-over-HTTPS</string>
