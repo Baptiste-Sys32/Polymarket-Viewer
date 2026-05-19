@@ -1,7 +1,8 @@
 # Polymarket Viewer
 
-Android app for convenient Polymarket market browsing, including home screen widget support.<br>
-Built with Jetpack Compose and modern Android practices following Clean Architecture.
+Android app for browsing Polymarket markets, viewing event details, tracking watchlisted events, and using home screen widgets.
+
+This repository is a personal fork of [streamatico/PolymarketViewer](https://github.com/streamatico/PolymarketViewer). My version is focused mainly on a UI revamp and interaction rework while keeping the original Kotlin/Jetpack Compose foundation.
 
 ## Screenshots
 
@@ -17,30 +18,27 @@ Built with Jetpack Compose and modern Android practices following Clean Architec
 
 ### Discover
 
-*   📊 Browse active prediction market events
-*   🔍 Search, filter, and sort with key metrics
-*   ⭐ Save favorite events to your watchlist
+*   Browse active prediction market events
+*   Search, filter, and sort with key metrics
+*   Save favorite events to your watchlist
 
 ### Analyze
 
-*   📋 View event details, outcomes, markets, and volume
-*   📈 Explore interactive market price history charts
-*   💬 Read threaded comments and open user profiles
+*   View event details, outcomes, markets, and volume
+*   Explore interactive market price history charts
+*   Read threaded comments and open user profiles
 
 ### Widget
 
-*   🧩 Add selected events as home screen widgets
-*   🔄 Open from widget and refresh manually or periodically
+*   Add selected events as home screen widgets
+*   Open from widget and refresh manually or periodically
 
 ## Download
 
-### F-Droid (Recommended)
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-     alt="Get it on F-Droid"
-     height="80">](https://f-droid.org/packages/com.streamatico.polymarketviewer/)
+This fork is not published on F-Droid.
 
 ### GitHub Releases
-Download the latest APK from [Releases](https://github.com/streamatico/PolymarketViewer/releases/latest).
+Download APK builds from this repository's [Releases](https://github.com/CatGPT-Sys32/projet-perso-polymarket-viewer/releases).
 
 *Enable "Install from unknown sources" in Android settings before installing.*
 
@@ -68,6 +66,8 @@ This project follows **Clean Architecture** principles with clear separation of 
 
 ## Acknowledgments
 
+This project is based on [streamatico/PolymarketViewer](https://github.com/streamatico/PolymarketViewer). Credit to the original maintainers for the core app architecture and Polymarket integration.
+
 Special thanks to the maintainers and contributors of the open source libraries that make this project possible:
 
 *   [Vico Charts](https://github.com/patrykandpatrick/vico) by @patrykandpatrick - Beautiful charts for Compose
@@ -87,9 +87,3 @@ Gradle daemon JVM is pinned in `gradle/gradle-daemon-jvm.properties` and should 
 ## Disclaimer
 
 This is an unofficial, experimental application and is not affiliated with Polymarket. Data is sourced from Polymarket.com via their public API. Use at your own discretion.
-
-## Contact
-
-If you have any questions or suggestions, please contact us at: <streamatico+polymarket@gmail.com>.
-
-Visit our website: [streamatico.com](https://streamatico.com/)

@@ -1,4 +1,4 @@
-# Images for F-Droid
+# App Store and Release Images
 
 ## Required files:
 
@@ -20,9 +20,9 @@
 - Show large screen layouts
 
 ## Current status:
-✅ icon.png - Added (21KB)
-✅ phoneScreenshots/ - Added (4 screenshots: 1.png, 2.png, 3.png, 4.png)
-📋 tenInchScreenshots/ - Ready for large tablet screenshots
+- icon.png - Added (21KB)
+- phoneScreenshots/ - Added (4 screenshots: 1.png, 2.png, 3.png, 4.png)
+- tenInchScreenshots/ - Ready for large tablet screenshots
 
 ## Instructions:
 1. Add app icon as `icon.png` (512x512px)
@@ -41,4 +41,4 @@ Screenshots help users understand what the app does before installing.
    - Charts view (better on larger screens)
 3. Name files: 1.png, 2.png, 3.png etc.
 
-F-Droid will automatically show appropriate screenshots based on device type. 
+These images can be reused for GitHub releases, app listings, or other distribution pages.
