@@ -38,7 +38,7 @@ This repository is a personal fork of [streamatico/PolymarketViewer](https://git
 This fork is not published on F-Droid.
 
 ### GitHub Releases
-Download APK builds from this repository's [Releases](https://github.com/CatGPT-Sys32/projet-perso-polymarket-viewer/releases).
+Download APK builds from this repository's [Releases](https://github.com/Baptiste-Sys32/projet-perso-polymarket-viewer/releases).
 
 *Enable "Install from unknown sources" in Android settings before installing.*
 
