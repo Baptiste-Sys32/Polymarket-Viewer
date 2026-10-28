@@ -1,8 +1,8 @@
 # Polymarket Viewer
 
-Polymarket Viewer is an unofficial Android application for browsing prediction markets, tracking watchlisted events, analyzing outcomes, and utilizing home screen widgets. 
+Unofficial Android app for browsing Polymarket prediction markets, tracking watchlisted events, and checking price charts, with home screen widgets.
 
-This repository is a personal fork of [streamatico/PolymarketViewer](https://github.com/streamatico/PolymarketViewer), primarily focused on a comprehensive user interface revamp and interaction rework while preserving the original robust Kotlin and Jetpack Compose architecture.
+This repository is a personal fork of [streamatico/PolymarketViewer](https://github.com/streamatico/PolymarketViewer). Notable changes: filters and layout brought closer to the website look, plus a forced dark mode for OLED and AMOLED screens.
 
 ## Screenshots
 
@@ -26,6 +26,14 @@ This repository is a personal fork of [streamatico/PolymarketViewer](https://git
 
 This project is built upon the open-source architecture of the upstream repository:
 https://github.com/streamatico/PolymarketViewer
+
+## Build
+
+```bash
+./gradlew assembleDebug
+```
+
+Needs the Android SDK. `local.properties` is git-ignored, point `sdk.dir` at your install.
 
 ## License
 
